@@ -3,7 +3,6 @@
 class Table
 {
 	public	static	$info = false;
-	private static	$index = 0;
 	
 	public static function write($data = false, $tableInfo = false)
 	{
@@ -56,6 +55,8 @@ class Table
 			}
 			
 			echo "\n	</table>";
+			
+			self::$info = false;
 		}
 	}
 	
@@ -66,7 +67,6 @@ class Table
 			$rowRules = false;
 			$cellsRules = false;
 			//====================
-			//$index = true;
 			$rowspan = true && self::$info['rowspan'];
 			$countRows = false;
 			$args = "";
