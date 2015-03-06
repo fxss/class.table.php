@@ -17,18 +17,24 @@ class Table
 	
 	/**
 	 * Synonym of Table::writeTable()
+	 * Write table from data array
+	 * 
 	 * @see writeTable()
+	 * @param array $data array of data
+	 * @param array $tableInfo array of common table info and settings
+	 * @return void
 	 */
 	public static function write($data = false, $tableInfo = false)
 	{
 		self::writeTable($data, $tableInfo);
 	}
 	
-	
 	/**
-	 * Write table from array data
+	 * Write table from data array
 	 * 
-	 * @see Table::writeTable()
+	 * @param array $data array of data
+	 * @param array $tableInfo array of common table info and settings
+	 * @return void
 	 */
 	public static function writeTable($data = false, $tableInfo = false)
 	{
@@ -81,6 +87,13 @@ class Table
 		}
 	}
 	
+	/**
+	 * Write row of table from data array
+	 * 
+	 * @param array $data array of data
+	 * @param array $colKeys array of column keys. Using for manage output order
+	 * @return void
+	 */
 	private static function writeRow($data, $colKeys)
 	{
 		if(is_array($data))
@@ -143,12 +156,25 @@ class Table
 		}
 	}
 	
+	/**
+	 * Write cell of table from data array
+	 * 
+	 * @param string $data cell content
+	 * @param array $rules parameters of cell
+	 * @return void
+	 */
 	private static function writeCell($data, $rules)
 	{
 		$args = self::convertRulesToHtml($rules);
 		echo "\n			<td{$args}>{$data}</td>";
 	}
 	
+	/**
+	 * Count the number of subrows
+	 * 
+	 * @param array $data array of subrows
+	 * @return int
+	 */
 	private static function countRows($data)
 	{
 		$rows = 0;
@@ -167,6 +193,12 @@ class Table
 		return $rows;
 	}
 	
+	/**
+	 * Convert array of parameters to html string
+	 * 
+	 * @param array $info array of table/row/cell parameters
+	 * @return string
+	 */
 	private static function convertRulesToHtml($info)
 	{
 		$args = "";
