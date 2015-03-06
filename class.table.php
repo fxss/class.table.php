@@ -213,6 +213,13 @@ class Table
 		return $args;
 	}
 	
+	/**
+	 * Modify column keys by rules
+	 * 
+	 * @param array $colKeys array of column keys
+	 * @param array $rules array of modification rules
+	 * @return array
+	 */
 	private static function modifyKeys($colKeys, $rules)
 	{
 		if($rules)
@@ -234,11 +241,23 @@ class Table
 		return $colKeys;
 	}
 	
+	/**
+	 * Return array of column keys
+	 * 
+	 * @param array $cols array of column information
+	 * @return array
+	 */
 	private static function getColKeys($cols)
 	{
 		return array_filter(array_map(function($v){return $v['key'];}, $cols), 'strlen');
 	}
 	
+	/**
+	 * Return array of column headers
+	 * 
+	 * @param array $cols array of column information
+	 * @return array
+	 */
 	private static function getTitles($cols)
 	{
 		return array_filter(array_map(function($v){return $v['title'];}, $cols));
