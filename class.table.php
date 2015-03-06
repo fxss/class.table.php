@@ -1,21 +1,42 @@
 <?php
-//test
+
+/**
+ * Table
+ * 
+ * Automatic creation of html tables from the data array
+ * 
+ * @author 0xSS <uxss@ya.ru>
+ * @version 1.0
+ */
 class Table
 {
-	public	static	$info = false;
+	/**
+	 * @var array $info Should contain a common table info and settings
+	 */
+	public static $info	= false;
 	
+	/**
+	 * Synonym of Table::writeTable()
+	 * @see writeTable()
+	 */
 	public static function write($data = false, $tableInfo = false)
 	{
 		self::writeTable($data, $tableInfo);
 	}
 	
+	
+	/**
+	 * Write table from array data
+	 * 
+	 * @see Table::writeTable()
+	 */
 	public static function writeTable($data = false, $tableInfo = false)
 	{
 		if($data)
 		{
-			$args = "";
-			$colKeys = false;
-			$titles = false;
+			$args		= "";
+			$colKeys	= false;
+			$titles		= false;
 			
 			if(!$tableInfo) $tableInfo = $data['tableInfo'];
 			elseif($data['tableInfo']) $tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
@@ -28,8 +49,8 @@ class Table
 				
 				if(self::$info['cols'])
 				{
-					$colKeys	=	array_filter(array_map(function($v){return $v[key];}, self::$info['cols']));
-					$titles		=	array_filter(array_map(function($v){return $v[title];}, self::$info['cols']));
+					$colKeys	=	self::getColKeys(self::$info['cols']);
+					$titles		=	self::getTitles(self::$info['cols']);
 					unset(self::$info['cols']);
 				}
 				
@@ -64,15 +85,15 @@ class Table
 	{
 		if(is_array($data))
 		{
-			$rowRules = false;
-			$cellsRules = false;
+			$rowRules	= false;
+			$cellsRules	= false;
 			//====================
-			$rowspan = true && self::$info['rowspan'];
-			$countRows = false;
-			$args = "";
+			$rowspan	= true && self::$info['rowspan'];
+			$countRows	= false;
+			$args		= "";
 			//====================
-			$subRow = false;
-			$subKeys = false;
+			$subRow		= false;
+			$subKeys	= false;
 			
 			if($data['tableInfo'])
 			{
@@ -90,7 +111,8 @@ class Table
 					$rowspan = $rowRules['rowspan'];
 					unset($rowRules['rowspan']);
 				}
-
+				
+				if($rowRules['cols']) $colKeys = self::getColKeys($rowRules['cols']);
 				$colKeys = self::modifyKeys($colKeys, $rowRules['keys']);
 				
 				$args = self::convertRulesToHtml($rowRules);
@@ -102,12 +124,14 @@ class Table
 			if(!$colKeys) $colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
 			
 			echo "\n		<tr{$args}>";
-			foreach($colKeys as $key)
+			foreach($colKeys as $i => $key)
 			{
 				if($data[$key] && $subRow && ($rowspan || (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])))
 				{
 					if(!$countRows) $countRows = self::countRows($data);
 					if(!is_int($cellsRules[$key]['rowspan'])) $cellsRules[$key]['rowspan'] = $countRows;
+				
+					unset($colKeys[$i]);
 				}
 				self::writeCell($data[$key], $cellsRules[$key]);
 			}
@@ -115,7 +139,7 @@ class Table
 			
 			if($subRow)
 				foreach($subRow as $row)
-					self::writeRow($row, array_diff($colKeys, array_keys($data)));
+					self::writeRow($row, $colKeys);
 		}
 	}
 	
@@ -146,6 +170,7 @@ class Table
 	private static function convertRulesToHtml($info)
 	{
 		$args = "";
+		
 		if(is_int($info['colspan']))	$args .= " colspan='{$info['colspan']}'";
 		if(is_int($info['rowspan']))	$args .= " rowspan='{$info['rowspan']}'";
 		if($info['id'])					$args .= " id='{$info['id']}'";
@@ -175,6 +200,16 @@ class Table
 		}
 		
 		return $colKeys;
+	}
+	
+	private static function getColKeys($cols)
+	{
+		return array_filter(array_map(function($v){return $v['key'];}, $cols), 'strlen');
+	}
+	
+	private static function getTitles($cols)
+	{
+		return array_filter(array_map(function($v){return $v['title'];}, $cols));
 	}
 
 }
