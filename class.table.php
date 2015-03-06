@@ -1,5 +1,5 @@
 <?php
-
+//test
 class Table
 {
 	public	static	$info = false;
