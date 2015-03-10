@@ -44,15 +44,19 @@ class Table
 			$colKeys	= false;
 			$titles		= false;
 			
+			//Search and collect information about the table in $tableInfo
+			//High priority is given to $tableInfo(second parameter)
 			if(!$tableInfo) $tableInfo = $data['tableInfo'];
 			elseif($data['tableInfo']) $tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
 			unset($data['tableInfo']);
 			
 			if($tableInfo)
 			{
+				//Following work will be happening with global variable $info
 				self::$info = $tableInfo;
 				unset($tableInfo);
 				
+				//Collecting information about columns(titles and column keys)
 				if(self::$info['cols'])
 				{
 					$colKeys	=	self::getColKeys(self::$info['cols']);
@@ -60,12 +64,15 @@ class Table
 					unset(self::$info['cols']);
 				}
 				
+				//Collecting HTML parameters for table
 				$args = self::convertRulesToHtml(self::$info);
 			}
+			//Height of each row will be calculated automatically by the default
 			if(!isset(self::$info['rowspan'])) self::$info['rowspan'] = true;
 			
 			echo "\n	<table{$args}>";
-					
+			
+			//If title was set then write	
 			if(is_array($titles) && sizeof($titles))
 			{
 				echo "\n		<tr>";
@@ -76,6 +83,7 @@ class Table
 				echo "\n		</tr>";
 			}
 			
+			//Write the rows
 			foreach($data as $info)
 			{
 				self::writeRow($info, $colKeys);
@@ -83,6 +91,7 @@ class Table
 			
 			echo "\n	</table>";
 			
+			//Clearing of global variables for the next use a static class
 			self::$info = false;
 		}
 	}
@@ -101,7 +110,7 @@ class Table
 			$rowRules	= false;
 			$cellsRules	= false;
 			//====================
-			$rowspan	= true && self::$info['rowspan'];
+			$rowspan	= self::$info['rowspan'];
 			$countRows	= false;
 			$args		= "";
 			//====================
@@ -134,6 +143,7 @@ class Table
 			foreach($data as $k => $item)
 				if(is_array($item)) $subRow = $item;
 			
+			//If do not specify column keys then it is filled with all the elements of the array, except for sub-arrays(all cells)
 			if(!$colKeys) $colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
 			
 			echo "\n		<tr{$args}>";
