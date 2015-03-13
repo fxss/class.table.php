@@ -149,7 +149,13 @@ class Table
 			echo "\n		<tr{$args}>";
 			foreach($colKeys as $i => $key)
 			{
-				if(isset($data[$key]) && $subRow && ($rowspan || (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])))
+				if(
+					isset($data[$key]) && $subRow &&
+					(
+						(!isset($cellsRules[$key]['rowspan']) && $rowspan)
+						|| (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])
+					)
+				  )
 				{
 					if(!$countRows) $countRows = self::countRows($data);
 					if(!is_int($cellsRules[$key]['rowspan'])) $cellsRules[$key]['rowspan'] = $countRows;
