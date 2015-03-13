@@ -173,7 +173,7 @@ class Table
 	}
 	
 	/**
-	 * Write cell of table from data array
+	 * Write cell of table from data string
 	 * 
 	 * @param string $data cell content
 	 * @param array $rules parameters of cell
