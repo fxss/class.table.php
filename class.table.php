@@ -156,7 +156,7 @@ class Table
 					)
 				  )
 				{
-					if(!$countRows) $countRows = self::countRows($data);
+					if(!$countRows) $countRows = (is_int($rowspan)) ? $rowspan : self::countRows($data);
 					if(!is_int($cellsRules[$key]['rowspan'])) $cellsRules[$key]['rowspan'] = $countRows;
 				
 					unset($colKeys[$i]);
