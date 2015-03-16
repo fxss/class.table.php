@@ -134,7 +134,6 @@ class Table
 					unset($rowRules['rowspan']);
 				}
 				
-				if($rowRules['cols']) $colKeys = self::getColKeys($rowRules['cols']);
 				$colKeys = self::modifyKeys($colKeys, $rowRules['keys']);
 				
 				$args = self::convertRulesToHtml($rowRules);
@@ -173,7 +172,7 @@ class Table
 	}
 	
 	/**
-	 * Write cell of table from data string
+	 * Write cell of table from data array
 	 * 
 	 * @param string $data cell content
 	 * @param array $rules parameters of cell
