@@ -16,8 +16,13 @@ class Table
 	public static $info	= false;
 	
 	/**
+	 * @var array $html Should contain a temporary HTML code of table
+	 */
+	public static $html	= "";
+	
+	/**
 	 * Synonym of Table::writeTable()
-	 * Write table from data array
+	 * Return html table from data array
 	 * 
 	 * @see writeTable()
 	 * @param array $data array of data
@@ -26,11 +31,11 @@ class Table
 	 */
 	public static function write($data = false, $tableInfo = false)
 	{
-		self::writeTable($data, $tableInfo);
+		return self::writeTable($data, $tableInfo);
 	}
 	
 	/**
-	 * Write table from data array
+	 * Return html table from data array
 	 * 
 	 * @param array $data array of data
 	 * @param array $tableInfo array of common table info and settings
@@ -70,17 +75,17 @@ class Table
 			//Height of each row will be calculated automatically by the default
 			if(!isset(self::$info['rowspan'])) self::$info['rowspan'] = true;
 			
-			echo "\n	<table{$args}>";
+			self::$html .= "\n	<table{$args}>";
 			
 			//If title was set then write	
 			if(is_array($titles) && sizeof($titles))
 			{
-				echo "\n		<tr>";
+				self::$html .= "\n		<tr>";
 				foreach($titles as $title)
 				{
-					echo "\n			<th>{$title}</th>";
+					self::$html .= "\n			<th>{$title}</th>";
 				}
-				echo "\n		</tr>";
+				self::$html .= "\n		</tr>";
 			}
 			
 			//Write the rows
@@ -89,10 +94,14 @@ class Table
 				self::writeRow($info, $colKeys);
 			}
 			
-			echo "\n	</table>";
+			self::$html .= "\n	</table>";
 			
+			$html = self::$html;
 			//Clearing of global variables for the next use a static class
 			self::$info = false;
+			self::$html = "";
+			
+			return $html;
 		}
 	}
 	
@@ -145,7 +154,7 @@ class Table
 			//If do not specify column keys then it is filled with all the elements of the array, except for sub-arrays(all cells)
 			if(!$colKeys) $colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
 			
-			echo "\n		<tr{$args}>";
+			self::$html .= "\n		<tr{$args}>";
 			foreach($colKeys as $i => $key)
 			{
 				if(
@@ -163,7 +172,7 @@ class Table
 				}
 				self::writeCell($data[$key], $cellsRules[$key]);
 			}
-			echo "\n		</tr>";
+			self::$html .= "\n		</tr>";
 			
 			if($subRow)
 				foreach($subRow as $row)
@@ -181,7 +190,7 @@ class Table
 	private static function writeCell($data, $rules)
 	{
 		$args = self::convertRulesToHtml($rules);
-		echo "\n			<td{$args}>{$data}</td>";
+		self::$html .= "\n			<td{$args}>{$data}</td>";
 	}
 	
 	/**
