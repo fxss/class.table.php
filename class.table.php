@@ -29,7 +29,7 @@ class Table
 	 * @param array $tableInfo array of common table info and settings
 	 * @return void
 	 */
-	public static function write($data = false, $tableInfo = false)
+	public static function html($data = false, $tableInfo = false)
 	{
 		return self::writeTable($data, $tableInfo);
 	}
