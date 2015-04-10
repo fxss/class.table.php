@@ -1,7 +1,5 @@
 <?php
 
-namespace fxss;
-
 /**
  * Table
  * 
@@ -169,9 +167,9 @@ class Table
 				{
 					if(!$countRows) $countRows = (is_int($rowspan)) ? $rowspan : self::countRows($data);
 					if(!is_int($cellsRules[$key]['rowspan'])) $cellsRules[$key]['rowspan'] = $countRows;
-				
-					unset($colKeys[$i]);
 				}
+				unset($colKeys[$i]);
+					
 				self::writeCell($data[$key], $cellsRules[$key]);
 			}
 			self::$html .= "\n		</tr>";
