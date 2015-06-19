@@ -131,10 +131,10 @@ class Table
 				$rowRules = $data['tableInfo'];
 				unset($data['tableInfo']);
 				
-				if($rowRules['cells'])
+				if($rowRules['cols'])
 				{
-					$cellsRules = $rowRules['cells'];
-					unset($rowRules['cells']);
+					$cellsRules = $rowRules['cols'];
+					unset($rowRules['cols']);
 				}
 				
 				if($rowRules['rowspan'])
@@ -285,6 +285,97 @@ class Table
 	private static function getTitles($cols)
 	{
 		return array_filter(array_map(function($v){return $v['title'];}, $cols));
+	}
+	
+	public static function groupArray($data, $byCols)
+	{
+		if (is_array($data) && is_array($byCols))
+		{
+			$newData = array();
+			
+			$tableInfo = $data['tableInfo'];
+			unset($data['tableInfo']);
+			
+			reset($byCols);
+			$currColK = key($byCols);
+			//unset($byCols[$currColK]);
+			foreach ($data as $key => $item)
+			{
+				if (!$newData[$item[$currColK]])
+					$newData[$item[$currColK]] = array();
+
+				$newData[$item[$currColK]] = array_replace_recursive($newData[$item[$currColK]], self::groupRow($item, $byCols));
+			}
+			
+			if ($tableInfo)
+				$newData['tableInfo'] = $tableInfo;
+			
+			return $newData;
+		}
+		return null;
+	}
+	
+	public static function groupRow($data, $byCols)
+	{
+		if (is_array($data) && is_array($byCols))
+		{
+			$newData = array();
+			
+			reset($byCols);
+			$prevColK = key($byCols);
+			$tableInfo = (is_array($byCols[$prevColK])) ? $byCols[$prevColK]['tableInfo'] : null;
+			unset($byCols[$prevColK]);
+			
+			foreach ($data as $key => $item)
+			{
+				if ($key != $prevColK)
+					$newData[$key] = "";
+				else
+				{
+					$newData[$key] = $item;
+					unset($data[$key]);
+					break;
+				}
+			}
+
+			reset($byCols);
+			$currColK = key($byCols);
+
+			//pre($data);
+			$subCols = array();
+			$toSub = false;
+			foreach ($data as $key => $item)
+			{
+				if (!$toSub && !key_exists($key, $byCols))
+					$newData[$key] = $item;
+				else
+				{	
+					if (key_exists($key, $byCols))
+					{
+						$toSub = (is_array($byCols[$key]))
+									? ( (is_int($byCols[$key]['v'])) ? $byCols[$key]['v'] : sizeof($data) )
+									: ( (is_int($byCols[$key])) ? $byCols[$key] : sizeof($data) );
+
+						if ($key == $currColK)
+							$newData[$key.'s'] = array();
+					}
+					else
+						$toSub--;
+
+					$subCols[$key] = $item;
+				}
+			}
+
+			//unset($byCols[$currColK]);
+			if ($currColK)
+				$newData[$currColK.'s'][$data[$currColK]] = self::groupRow($subCols, $byCols);
+			
+			if ($tableInfo)
+				$newData['tableInfo'] = $tableInfo;
+			
+			return $newData;
+		}
+		return null;
 	}
 
 }
