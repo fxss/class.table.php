@@ -6,21 +6,31 @@
  * Automatic creation of html tables from the data array
  * 
  * @author 0xSS <uxss@ya.ru>
- * @version 1.0
+ * @version 1.2
  */
 class Table
 {
 	/**
 	 * @var array $info Should contain a common table info and settings
 	 */
-	public static $info	= false;
+	private static $info	= null;
 	
 	/**
 	 * @var array $html Should contain a temporary HTML code of table
 	 */
-	public static $html	= "";
+	private static $html	= null;
 	
 	/**
+	 * @var active sheet of PHPExcel
+	 */
+	private static $sheet = null;
+	
+	/**
+	 * @var excelActiveCellCoord of PHPExcel
+	 */
+	private static $acc = null;
+
+		/**
 	 * Synonym of Table::writeTable()
 	 * Return html table from data array
 	 * 
@@ -41,7 +51,7 @@ class Table
 	 * @param array $tableInfo array of common table info and settings
 	 * @return void
 	 */
-	public static function writeTable($data = false, $tableInfo = false)
+	private static function writeTable($data = false, $tableInfo = false)
 	{
 		if($data)
 		{
@@ -51,8 +61,16 @@ class Table
 			
 			//Search and collect information about the table in $tableInfo
 			//High priority is given to $tableInfo(second parameter)
-			if(!$tableInfo) $tableInfo = $data['tableInfo'];
-			elseif($data['tableInfo']) $tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
+			if(!$tableInfo)
+				$tableInfo = $data['tableInfo'];
+			elseif($data['tableInfo'])
+				$tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
+			
+			$data['tableInfo'] = $tableInfo;
+			$date = new DateTime('now');
+			$_SESSION['class.table']['date'] = $date;
+			$_SESSION['class.table']['array'] = $data;
+			
 			unset($data['tableInfo']);
 			
 			if($tableInfo)
@@ -64,18 +82,24 @@ class Table
 				//Collecting information about columns(titles and column keys)
 				if(self::$info['cols'])
 				{
-					$colKeys	=	self::getColKeys(self::$info['cols']);
-					$titles		=	self::getTitles(self::$info['cols']);
+					$colKeys	=	array_keys(self::$info['cols']);
+					$titles		=	array_filter(self::$info['cols']);
 					unset(self::$info['cols']);
 				}
-				
-				//Collecting HTML parameters for table
-				$args = self::convertRulesToHtml(self::$info);
 			}
-			//Height of each row will be calculated automatically by the default
-			if(!isset(self::$info['rowspan'])) self::$info['rowspan'] = true;
 			
-			self::$html .= "\n	<table{$args}>";
+			self::$info['class'] = trim("class.table " . self::$info['class']);
+			//Collecting HTML parameters for table
+			$args = self::convertRulesToHtml(self::$info);
+			
+			//Height of each row will be calculated automatically by the default
+			if(!isset(self::$info['rowspan']))
+				self::$info['rowspan'] = true;
+			
+			self::$html .= "\n		<table{$args}>";
+			self::$html .= "\n			<caption>
+											<div class='forToggle'><div class='forVAlign'></div><button>Сохранить</button></div>
+										</caption>";
 			
 			//If title was set then write	
 			if(is_array($titles) && sizeof($titles))
@@ -94,12 +118,12 @@ class Table
 				self::writeRow($info, $colKeys);
 			}
 			
-			self::$html .= "\n	</table>";
+			self::$html .= "\n		</table>";
 			
 			$html = self::$html;
 			//Clearing of global variables for the next use a static class
-			self::$info = false;
-			self::$html = "";
+			self::$info = null;
+			self::$html = null;
 			
 			return $html;
 		}
@@ -124,7 +148,6 @@ class Table
 			$args		= "";
 			//====================
 			$subRow		= false;
-			$subKeys	= false;
 			
 			if($data['tableInfo'])
 			{
@@ -148,8 +171,10 @@ class Table
 				$args = self::convertRulesToHtml($rowRules);
 			}
 			
-			foreach($data as $k => $item)
-				if(is_array($item)) $subRow = $item;
+//			foreach($data as $k => $item)
+//				if(is_array($item)) $subRow = $item;
+			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
+			$subRow = $subRow[0];
 			
 			//If do not specify column keys then it is filled with all the elements of the array, except for sub-arrays(all cells)
 			if(!$colKeys) $colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
@@ -165,18 +190,19 @@ class Table
 					)
 				  )
 				{
-					if(!$countRows) $countRows = (is_int($rowspan)) ? $rowspan : self::countRows($data);
-					if(!is_int($cellsRules[$key]['rowspan'])) $cellsRules[$key]['rowspan'] = $countRows;
+					if(!$countRows)
+						$countRows = (is_int($rowspan)) ? $rowspan : self::countRows($data);
+					if(!is_int($cellsRules[$key]['rowspan']))
+						$cellsRules[$key]['rowspan'] = $countRows;
 				}
 				unset($colKeys[$i]);
-					
+				
 				self::writeCell($data[$key], $cellsRules[$key]);
 			}
 			self::$html .= "\n		</tr>";
-			
-			if($subRow)
-				foreach($subRow as $row)
-					self::writeRow($row, $colKeys);
+
+			foreach($subRow as $row)
+				self::writeRow($row, $colKeys);
 		}
 	}
 	
@@ -265,28 +291,6 @@ class Table
 		return $colKeys;
 	}
 	
-	/**
-	 * Return array of column keys
-	 * 
-	 * @param array $cols array of column information
-	 * @return array
-	 */
-	private static function getColKeys($cols)
-	{
-		return array_filter(array_map(function($v){return $v['key'];}, $cols), 'strlen');
-	}
-	
-	/**
-	 * Return array of column headers
-	 * 
-	 * @param array $cols array of column information
-	 * @return array
-	 */
-	private static function getTitles($cols)
-	{
-		return array_filter(array_map(function($v){return $v['title'];}, $cols));
-	}
-	
 	public static function groupArray($data, $byCols)
 	{
 		if (is_array($data) && is_array($byCols))
@@ -341,8 +345,7 @@ class Table
 			reset($byCols);
 			$currColK = key($byCols);
 
-			//pre($data);
-			$subCols = array();
+			$subRows = array();
 			$toSub = false;
 			foreach ($data as $key => $item)
 			{
@@ -362,13 +365,13 @@ class Table
 					else
 						$toSub--;
 
-					$subCols[$key] = $item;
+					$subRows[$key] = $item;
 				}
 			}
 
 			//unset($byCols[$currColK]);
 			if ($currColK)
-				$newData[$currColK.'s'][$data[$currColK]] = self::groupRow($subCols, $byCols);
+				$newData[$currColK.'s'][$data[$currColK]] = self::groupRow($subRows, $byCols);
 			
 			if ($tableInfo)
 				$newData['tableInfo'] = $tableInfo;
@@ -377,7 +380,210 @@ class Table
 		}
 		return null;
 	}
+	
+	public static function saveToExcel($data = false)
+	{
+		if ($data)
+		{
+			include("{$_SERVER['DOCUMENT_ROOT']}/admin/PHPExcel/Classes/PHPExcel.php");
+			
+			$colKeys = false;
+			$titles = false;
+			
+			$file = "table.{$_SESSION['auth']['login']}.xlsx";
+			
+			$template = "{$_SERVER['DOCUMENT_ROOT']}/lib/class.table.php/empty.xlsx";
+			$xls = PHPExcel_IOFactory::load($template);
+			self::$sheet = $xls->getActiveSheet();
+			
+			//***************************************
+			self::$sheet->setSelectedCellByColumnAndRow(0, 1);
+			
+//			self::$sheet->setCellValueByColumnAndRow(8, 2, "VALUE");
+//			self::$sheet->mergeCellsByColumnAndRow(8, 2, 8, 3);
+//			pre(self::$sheet->getMergeCells());
+			
+			if($data['tableInfo'])
+			{
+				//Following work will be happening with global variable $info
+				self::$info = $data['tableInfo'];
+				unset($data['tableInfo']);
+				
+				//Collecting information about columns(titles and column keys)
+				if(self::$info['excelCols'])
+				{
+					$colKeys	=	array_keys(self::$info['excelCols']);
+					$titles		=	array_values(array_filter(self::$info['excelCols']));
+					unset(self::$info['excelCols']);
+				}
+				elseif(self::$info['cols'])
+				{
+					$colKeys	=	array_keys(self::$info['cols']);
+					$titles		=	array_values(array_filter(self::$info['cols']));
+					unset(self::$info['cols']);
+				}
+			}
+			//Height of each row will be calculated automatically by the default
+			if(!isset(self::$info['rowspan']))
+				self::$info['rowspan'] = true;
+			
+			self::excelGetActiveCellCoord();
+			
+			if(is_array($titles) && sizeof($titles))
+			{
+				$titles['tableInfo']['class'] = "head";
+				self::excelWriteRow($titles, false);
+			}
+			
+			foreach ($data as $item)
+			{
+				self::excelWriteRow($item, $colKeys);
+			}
+			
+			//***************************************
+			
+			$objWriter = PHPExcel_IOFactory::createWriter($xls, 'Excel2007');
+			$objWriter->save("{$_SERVER['DOCUMENT_ROOT']}/tmp/{$file}");
+			
+			self::$info = null;
+			self::$sheet = null;
+			self::$acc = null;
 
+			return $file;
+		}
+	}
+	
+	private static function excelWriteRow($data, $colKeys)
+	{
+		if(is_array($data))
+		{
+			$rowRules	= false;
+			$cellsRules	= false;
+			//====================
+			$rowspan	= self::$info['rowspan'];
+			$countRows	= false;
+			$args		= "";
+			//====================
+			$needNewRow = false;
+			$subRow		= false;
+			
+			if($data['tableInfo'])
+			{
+				$rowRules = $data['tableInfo'];
+				unset($data['tableInfo']);
+				
+				if($rowRules['excelKeys'])
+				{
+					$rowRules['keys'] = $rowRules['excelKeys'];
+					unset($rowRules['excelKeys']);
+				}
+				if($rowRules['cols'])
+				{
+					$cellsRules = $rowRules['cols'];
+					unset($rowRules['cols']);
+				}
+				
+				if($rowRules['rowspan'])
+				{
+					$rowspan = $rowRules['rowspan'];
+					unset($rowRules['rowspan']);
+				}
+				
+				$colKeys = self::modifyKeys($colKeys, $rowRules['keys']);
+			}
+			
+			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
+			$subRow = $subRow[0];
+			
+			//If do not specify column keys then it is filled with all the elements of the array, except for sub-arrays(all cells)
+			if(!$colKeys)
+				$colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
+			
+			foreach($colKeys as $i => $key)
+			{
+				if(
+					isset($data[$key]) && $subRow &&
+					(
+						(!isset($cellsRules[$key]['rowspan']) && $rowspan)
+						|| (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])
+					)
+				  )
+				{
+					if(!$countRows)
+						$countRows = (is_int($rowspan))
+							? $rowspan
+							: (self::countRows($data) - 1*(!(bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
+					if(!is_int($cellsRules[$key]['rowspan']))
+						$cellsRules[$key]['rowspan'] = $countRows;
+				}
+				unset($colKeys[$i]);
+				
+				if ($rowRules['class'])
+					$cellsRules[$key]['class'] = $rowRules['class'];
+				if ($cellsRules[$key]['rowspan'] === false)
+					$needNewRow = true;
+				
+				self::excelCellSetValue ($i, $data[$key], $cellsRules[$key]);
+			}
+			if ($needNewRow)
+				self::$acc['row']++;
+			
+			if ($subRow)
+				foreach($subRow as $row)
+					self::excelWriteRow($row, $colKeys);
+			else
+				self::$acc['row']++;
+		}
+	}
+	
+	private static function excelGetActiveCellCoord()
+	{
+		$activCell = preg_split("/^([A-Z]+)(\d+)$/", self::$sheet->getActiveCell(), null, PREG_SPLIT_DELIM_CAPTURE);
+		self::$acc['col'] = (PHPExcel_Cell::columnIndexFromString($activCell[1])-1);
+		self::$acc['row'] = $activCell[2];
+	}
+	
+	private static function excelCellSetValue($col, $value, $rules)
+	{
+		$value = mb_convert_encoding($value, 'utf-8', 'cp1251');
+		
+		while (!self::excelCellIsEmpty($col, self::$acc['row']))
+			$col++;
+		
+		self::$sheet->setCellValueByColumnAndRow($col, self::$acc['row'], $value);
+		
+		if ($rules['rowspan'] > 0 || $rules['colspan'] > 0)
+		{
+			$toRow = self::$acc['row'] + $rules['rowspan'] - (bool)$rules['rowspan']*1;
+			$toCol = $col + $rules['colspan'] - (bool)$rules['colspan']*1;
+			self::$sheet->mergeCellsByColumnAndRow($col, self::$acc['row'], $toCol, $toRow);
+		}
+		if ($rules['class'] == "head")
+			self::$sheet->getStyleByColumnAndRow($col, self::$acc['row'])->getFont()->setBold(true);
+	}
+	
+	private static function excelCellIsEmpty($col, $row)
+	{
+		$empty = true;
+		
+		if (self::$sheet->getCellByColumnAndRow($col, $row)->getValue())
+			$empty = false;
+		
+		if ($empty)
+		{
+			$cell = self::$sheet->getCellByColumnAndRow($col, $row);
+			
+			foreach (self::$sheet->getMergeCells() as $cells) {
+				if ($cell->isInRange($cells)) {
+					$empty = false;
+					break;
+				}
+			}
+		}
+		
+		return $empty;
+	}
+	
 }
 
 ?>

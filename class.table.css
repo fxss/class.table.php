@@ -1,0 +1,45 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 24.06.2015, 17:15:29
+    Author     : fxss
+*/
+
+table.class\.table {
+    
+}
+
+table.class\.table caption {
+    height: 0px;
+}
+table.class\.table .forToggle {
+    display: none;
+    height: 30px;
+    margin-top: -30px;
+    text-align: left;
+    position: absolute;
+    z-index: 999;
+    /*background-color: #cccccc;*/
+}
+table.class\.table .forToggle .forVAlign {
+    display: inline-block;
+    width: 0px;
+    height: 30px;
+}
+table.class\.table .forToggle button {
+    vertical-align: bottom;
+    height: 28px;
+    border: 2px solid #444;
+    border-bottom-width: 0px;
+    padding: 2px;
+    padding-left: 22px;
+    background-color: #1e7145;
+    background-image:url(/lib/class.table.php/excel_2_64.png);
+    background-position: 2px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    color: #fff;
+}
