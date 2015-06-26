@@ -29,6 +29,11 @@ class Table
 	 * @var excelActiveCellCoord of PHPExcel
 	 */
 	private static $acc = null;
+	
+	/**
+	 * @var value for closure index function
+	 */
+	private static $index = null;
 
 		/**
 	 * Synonym of Table::writeTable()
@@ -225,7 +230,7 @@ class Table
 	 * @param array $data array of subrows
 	 * @return int
 	 */
-	private static function countRows($data)
+	private static function countRows($data, $toExcel = false)
 	{
 		$rows = 0;
 		
@@ -236,8 +241,12 @@ class Table
 			
 			foreach($data as $item)
 				if(is_array($item))
+				{
+					if ($toExcel)
+						$rows--;
 					foreach($item as $a)
-						$rows += self::countRows($a);
+						$rows += self::countRows($a, $toExcel);
+				}
 		}
 		
 		return $rows;
@@ -291,10 +300,13 @@ class Table
 		return $colKeys;
 	}
 	
-	public static function groupArray($data, $byCols)
+	public static function groupArray($data)
 	{
-		if (is_array($data) && is_array($byCols))
+		if (is_array($data) && $data['tableInfo']['groupBy'])
 		{
+			$byCols = $data['tableInfo']['groupBy'];
+			unset($data['tableInfo']['groupBy']);
+			
 			$newData = array();
 			
 			$tableInfo = $data['tableInfo'];
@@ -319,7 +331,7 @@ class Table
 		return null;
 	}
 	
-	public static function groupRow($data, $byCols)
+	private static function groupRow($data, $byCols)
 	{
 		if (is_array($data) && is_array($byCols))
 		{
@@ -328,6 +340,8 @@ class Table
 			reset($byCols);
 			$prevColK = key($byCols);
 			$tableInfo = (is_array($byCols[$prevColK])) ? $byCols[$prevColK]['tableInfo'] : null;
+			if ($byCols[$prevColK]['closure'])
+				$data = $byCols[$prevColK]['closure']($data);
 			unset($byCols[$prevColK]);
 			
 			foreach ($data as $key => $item)
@@ -512,7 +526,8 @@ class Table
 					if(!$countRows)
 						$countRows = (is_int($rowspan))
 							? $rowspan
-							: (self::countRows($data) - 1*(!(bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
+							: (self::countRows($data, true) + 1*((bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
+							//: (self::countRows($data, true) - 1*(!(bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
 					if(!is_int($cellsRules[$key]['rowspan']))
 						$cellsRules[$key]['rowspan'] = $countRows;
 				}
@@ -545,6 +560,7 @@ class Table
 	
 	private static function excelCellSetValue($col, $value, $rules)
 	{
+		if ($value == null) $value = " ";
 		$value = mb_convert_encoding($value, 'utf-8', 'cp1251');
 		
 		while (!self::excelCellIsEmpty($col, self::$acc['row']))
@@ -582,6 +598,16 @@ class Table
 		}
 		
 		return $empty;
+	}
+	
+	public static function getIndexFunc()
+	{
+		return function($data)
+		{
+			self::$index++;
+			$data['id'] = self::$index;
+			return $data;
+		};
 	}
 	
 }
