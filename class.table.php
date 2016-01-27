@@ -21,11 +21,6 @@ class Table
 	private static $html	= null;
 	
 	/**
-	 * @var array $ungroupedRows Should contain a temporary ungrouped rows
-	 */
-	private static $ungroupedRows	= null;
-	
-	/**
 	 * @var active sheet of PHPExcel
 	 */
 	private static $sheet = null;
@@ -38,7 +33,7 @@ class Table
 	/**
 	 * @var value for closure index function
 	 */
-	public static $index = null;
+	private static $index = null;
 
 		/**
 	 * Synonym of Table::writeTable()
@@ -80,8 +75,6 @@ class Table
 			$date = new DateTime('now');
 			$_SESSION['class.table']['date'] = $date;
 			$_SESSION['class.table']['array'] = $data;
-			$_SESSION['class.table']['count']++;
-			$tableNum = $_SESSION['class.table']['count'];
 			
 			unset($data['tableInfo']);
 			
@@ -110,12 +103,7 @@ class Table
 			
 			self::$html .= "\n		<table{$args}>";
 			self::$html .= "\n			<caption>
-											<div class='forToggle'><div class='forVAlign'></div><button title='Генерирует последнюю запрошенную таблицу'>
-													Сохранить
-												</button><div class='tableSettings' title='Доступно только если сгруппирована текущая таблица'>
-													<input type='checkbox' checked='checked' id='table{$tableNum}' value='value'><label for='table{$tableNum}'>Группировать таблицу</label>
-												</div>
-											</div>
+											<div class='forToggle'><div class='forVAlign'></div><button>Сохранить</button></div>
 										</caption>";
 			
 			//If title was set then write	
@@ -188,6 +176,8 @@ class Table
 				$args = self::convertRulesToHtml($rowRules);
 			}
 			
+//			foreach($data as $k => $item)
+//				if(is_array($item)) $subRow = $item;
 			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
 			$subRow = $subRow[0];
 			
@@ -198,7 +188,7 @@ class Table
 			foreach($colKeys as $i => $key)
 			{
 				if(
-					isset($data[$key]) && //$subRow &&
+					isset($data[$key]) && $subRow &&
 					(
 						(!isset($cellsRules[$key]['rowspan']) && $rowspan)
 						|| (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])
@@ -210,8 +200,7 @@ class Table
 					if(!is_int($cellsRules[$key]['rowspan']))
 						$cellsRules[$key]['rowspan'] = $countRows;
 				}
-				if (isset($data[$key]))
-					unset($colKeys[$i]);
+				unset($colKeys[$i]);
 				
 				self::writeCell($data[$key], $cellsRules[$key]);
 			}
@@ -274,8 +263,7 @@ class Table
 		$args = "";
 		
 		if(is_int($info['colspan']))	$args .= " colspan='{$info['colspan']}'";
-		if(is_int($info['rowspan']) && $info['rowspan'] > 1)
-			$args .= " rowspan='{$info['rowspan']}'";
+		if(is_int($info['rowspan']))	$args .= " rowspan='{$info['rowspan']}'";
 		if($info['id'])					$args .= " id='{$info['id']}'";
 		if($info['class'])				$args .= " class='{$info['class']}'";
 		if($info['style'])				$args .= " style='{$info['style']}'";
@@ -298,7 +286,7 @@ class Table
 			if($rules['delete'] == 'all') $colKeys = array();
 			else
 				foreach($rules['delete'] as $v)
-					if(is_int(array_search($v, $colKeys)))
+					if(array_search($v, $colKeys))
 						unset($colKeys[array_search($v, $colKeys)]);
 			
 			foreach($rules['add'] as $v)
@@ -309,7 +297,7 @@ class Table
 					$colKeys[array_search($v['src'], $colKeys)] = $v['dst'];
 		}
 		
-		return array_values($colKeys);
+		return $colKeys;
 	}
 	
 	public static function groupArray($data)
@@ -326,32 +314,13 @@ class Table
 			
 			reset($byCols);
 			$currColK = key($byCols);
-			$mergeClosure = $byCols[$currColK]['mergeClosure'];
+			//unset($byCols[$currColK]);
 			foreach ($data as $key => $item)
 			{
 				if (!$newData[$item[$currColK]])
 					$newData[$item[$currColK]] = array();
-				
-				$newData[$item[$currColK]] = ($mergeClosure)
-												? $mergeClosure($newData[$item[$currColK]], self::groupRow($item, $byCols))
-												: array_replace_recursive($newData[$item[$currColK]], self::groupRow($item, $byCols));
-			}
-			
-			$postClosure = false;
-			foreach ($byCols as $key => $item)
-			{
-				if ($item['postClosure'])
-					$postClosure = true;
-				else
-					unset($byCols[$key]);
-			}
-			
-			if ($postClosure)
-			{
-				foreach ($newData as $key => $item)
-				{
-					$newData[$key] = self::doClosure($item, $byCols);
-				}
+
+				$newData[$item[$currColK]] = array_replace_recursive($newData[$item[$currColK]], self::groupRow($item, $byCols));
 			}
 			
 			if ($tableInfo)
@@ -414,6 +383,7 @@ class Table
 				}
 			}
 
+			//unset($byCols[$currColK]);
 			if ($currColK)
 				$newData[$currColK.'s'][$data[$currColK]] = self::groupRow($subRows, $byCols);
 			
@@ -425,116 +395,6 @@ class Table
 		return null;
 	}
 	
-	private static function doClosure($data, $byCols)
-	{
-		if (is_array($data) && is_array($byCols))
-		{
-			$newData = array();
-		
-			$tableInfo = $data['tableInfo'];
-			unset($data['tableInfo']);
-			
-			$needClosure = false;
-			foreach ($data as $key => $item)
-			{
-				if (is_array($item))
-					foreach ($item as $subKey => $subItem)
-						$data[$key][$subKey] = self::doClosure($subItem, $byCols);
-				elseif (key_exists($key, $byCols))
-					$needClosure = $key;
-			}
-			
-			$newData = $data;
-			if ($needClosure)
-				$newData = $byCols[$needClosure]['postClosure']($newData);
-			
-			if ($tableInfo)
-				$newData['tableInfo'] = $tableInfo;
-			
-			return $newData;
-		}
-		return null;
-	}
-	
-	public static function ungroupArray($data)
-	{
-		if (is_array($data))
-		{
-			$newData = array();
-			
-			$tableInfo = $data['tableInfo'];
-			unset($data['tableInfo']);
-			
-			foreach ($data as $item)
-			{
-				self::$ungroupedRows = array();
-				self::ungroupRow($item);
-				
-				$newData = array_merge($newData, self::$ungroupedRows);
-			}
-			
-			$newData['tableInfo'] = $tableInfo;
-			
-			self::$ungroupedRows = null;
-			
-			return $newData;
-		}
-		
-		return null;
-	}
-	
-	private static function ungroupRow($data)
-	{
-		if (is_array($data))
-		{
-			$newData = array();
-			
-			$tableInfo = $data['tableInfo'];
-			unset($data['tableInfo']);
-			
-			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
-			$subRow = $subRow[0];
-			
-			$data = array_filter(array_map(function ($v)
-			{
-				if (is_array($v)) return null;
-				else
-				{
-					if (!$v && !is_int($v))
-						$v = " ";
-					return $v;
-				}
-			}, $data));
-			
-			$data['tableInfo'] = $tableInfo;
-				
-			if ($subRow)
-			{
-				$withoutRowspan = array_filter($data['tableInfo']['cols'], function ($v)
-				{
-					return ($v['rowspan'] === false);
-				});
-				
-				if ($withoutRowspan)
-				{
-					self::$ungroupedRows[] = $data;
-					
-					foreach ($withoutRowspan as $k => $v)
-						unset($data[$k]);
-				}
-				
-				foreach ($subRow as $item)
-				{
-					self::ungroupRow(array_replace_recursive($data, $item));
-				}
-			}
-			else
-			{
-				self::$ungroupedRows[] = $data;
-			}
-		}
-	}
-
 	public static function saveToExcel($data = false)
 	{
 		if ($data)
@@ -656,7 +516,7 @@ class Table
 			foreach($colKeys as $i => $key)
 			{
 				if(
-					isset($data[$key]) && //$subRow &&
+					isset($data[$key]) && $subRow &&
 					(
 						(!isset($cellsRules[$key]['rowspan']) && $rowspan)
 						|| (is_bool($cellsRules[$key]['rowspan']) && $cellsRules[$key]['rowspan'])
@@ -666,33 +526,26 @@ class Table
 					if(!$countRows)
 						$countRows = (is_int($rowspan))
 							? $rowspan
-							: (self::countRows($data, true) + 1*((bool)array_filter($cellsRules, function($v){return $v['rowspan'] === false;})));
+							: (self::countRows($data, true) + 1*((bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
 							//: (self::countRows($data, true) - 1*(!(bool)array_filter($cellsRules, function($v){return $v['rowspan'] == false;})));
 					if(!is_int($cellsRules[$key]['rowspan']))
 						$cellsRules[$key]['rowspan'] = $countRows;
 				}
-				if (isset($data[$key]))
+				unset($colKeys[$i]);
 				
 				if ($rowRules['class'])
 					$cellsRules[$key]['class'] = $rowRules['class'];
 				if ($cellsRules[$key]['rowspan'] === false)
 					$needNewRow = true;
 				
-				if (isset($data[$key]))
-				{
-					unset($colKeys[$i]);
-					self::excelCellSetValue ($i, $data[$key], $cellsRules[$key]);
-				}
+				self::excelCellSetValue ($i, $data[$key], $cellsRules[$key]);
 			}
+			if ($needNewRow)
+				self::$acc['row']++;
 			
 			if ($subRow)
-			{
-				if ($needNewRow)
-					self::$acc['row']++;
-			
 				foreach($subRow as $row)
 					self::excelWriteRow($row, $colKeys);
-			}
 			else
 				self::$acc['row']++;
 		}
@@ -707,9 +560,7 @@ class Table
 	
 	private static function excelCellSetValue($col, $value, $rules)
 	{
-//		$col = 0;
-		
-		if ($value === null) $value = " ";
+		if ($value == null) $value = " ";
 		$value = mb_convert_encoding($value, 'utf-8', 'cp1251');
 		
 		while (!self::excelCellIsEmpty($col, self::$acc['row']))
@@ -723,8 +574,7 @@ class Table
 			$toCol = $col + $rules['colspan'] - (bool)$rules['colspan']*1;
 			self::$sheet->mergeCellsByColumnAndRow($col, self::$acc['row'], $toCol, $toRow);
 		}
-		
-		if ($rules['class'] && in_array("head", explode(" ", $rules['class'])))
+		if ($rules['class'] == "head")
 			self::$sheet->getStyleByColumnAndRow($col, self::$acc['row'])->getFont()->setBold(true);
 	}
 	
@@ -750,38 +600,16 @@ class Table
 		return $empty;
 	}
 	
-	public static function getIndexFunc($pos = false)
+	public static function getIndexFunc()
 	{
-		self::$index = 0;
-		
-		return function($data) use($pos)
+		return function($data)
 		{
-			//var_dump(self::$index);
-			//Using Table:: instead self:: for php 5.3
-			Table::$index++;
-			$newData = array();
-			
-			if (is_int($pos))
-			{
-				$id = array('id' => Table::$index);
-				$newData = array_merge(array_slice($data, 0, $pos), $id, array_slice($data, $pos));
-			}
-			else
-			{
-				$newData = $data;
-				$newData['id'] = Table::$index;
-			}
-			
-			return $newData;
+			self::$index++;
+			$data['id'] = self::$index;
+			return $data;
 		};
 	}
 	
-	public function pre($a)
-	{
-		echo "<pre style='text-align:left;'>";
-		print_r($a);
-		echo "</pre>";
-	}
 }
 
 ?>

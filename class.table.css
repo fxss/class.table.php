@@ -14,30 +14,26 @@ table.class\.table {
 
 table.class\.table caption {
     height: 0px;
-	display: table-cell;
 }
 table.class\.table .forToggle {
     display: none;
     height: 30px;
-    margin-top: -32px;
-    margin-left: -1px;
+    margin-top: -30px;
     text-align: left;
     position: absolute;
     z-index: 999;
     /*background-color: #cccccc;*/
 }
-table.class\.table:hover .forToggle {
-	display: block;
-}
 table.class\.table .forToggle .forVAlign {
     display: inline-block;
     width: 0px;
-    height: 24px;
+    height: 30px;
 }
 table.class\.table .forToggle button {
     vertical-align: bottom;
     height: 28px;
     border: 2px solid #444;
+    border-bottom-width: 0px;
     padding: 2px;
     padding-left: 22px;
     background-color: #1e7145;
@@ -46,16 +42,4 @@ table.class\.table .forToggle button {
     background-size: 20px;
     background-repeat: no-repeat;
     color: #fff;
-    margin: 0px;
-}
-table.class\.table .forToggle .tableSettings {
-    display: inline-block;
-    height: 20px;
-    border: 2px solid #444;
-    border-left-width: 0px;
-    background-color: #eee;
-    padding: 2px;
-}
-table.class\.table .forToggle .tableSettings input {
-    margin: 2px;
 }
