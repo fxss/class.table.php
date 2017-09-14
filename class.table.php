@@ -73,10 +73,11 @@ class Table
 
 			//Search and collect information about the table in $tableInfo
 			//High priority is given to $tableInfo(second parameter)
-			if(!$tableInfo)
-				$tableInfo = $data['tableInfo'];
-			elseif($data['tableInfo'])
-				$tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
+			if(!$tableInfo) {
+				if(isset($data['tableInfo']) && $data['tableInfo']) {
+					$tableInfo = array_replace_recursive($data['tableInfo'], $tableInfo);
+				}
+			}
 
 			$data['tableInfo'] = $tableInfo;
 			$date = new DateTime('now');
@@ -195,7 +196,7 @@ class Table
 			//====================
 			$subRow		= false;
 
-			if($data['tableInfo'])
+			if(isset($data['tableInfo']) && $data['tableInfo'])
 			{
 				$rowRules = $data['tableInfo'];
 				unset($data['tableInfo']);
@@ -236,7 +237,7 @@ class Table
 				{
 					if(!$countRows)
 						$countRows = (is_int($rowspan)) ? $rowspan : self::countRows($data);
-					if(!is_int($cellsRules[$key]['rowspan']))
+					if(!isset($cellsRules[$key]['rowspan']) || !is_int($cellsRules[$key]['rowspan']))
 						$cellsRules[$key]['rowspan'] = $countRows;
 				}
 				if (array_key_exists($key, $data))
@@ -323,13 +324,13 @@ class Table
 	{
 		$args = "";
 
-		if(is_int($info['colspan']))	$args .= " colspan='{$info['colspan']}'";
-		if(is_int($info['rowspan']) && $info['rowspan'] > 1)
+		if(isset($info['colspan']) && is_int($info['colspan']))	$args .= " colspan='{$info['colspan']}'";
+		if(isset($info['rowspan']) && is_int($info['rowspan']) && $info['rowspan'] > 1)
 			$args .= " rowspan='{$info['rowspan']}'";
-		if($info['id'])					$args .= " id='{$info['id']}'";
-		if($info['class'])				$args .= " class='{$info['class']}'";
-		if($info['style'])				$args .= " style='{$info['style']}'";
-		if($info['args'])				$args .= " {$info['args']}";
+		if(isset($info['id']) && $info['id'])					$args .= " id='{$info['id']}'";
+		if(isset($info['class']) && $info['class'])				$args .= " class='{$info['class']}'";
+		if(isset($info['style']) && $info['style'])				$args .= " style='{$info['style']}'";
+		if(isset($info['args']) && $info['args'])				$args .= " {$info['args']}";
 
 		return $args;
 	}
@@ -864,5 +865,3 @@ class Table
 		echo "</pre>";
 	}
 }
-
-?>
