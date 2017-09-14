@@ -95,12 +95,12 @@ class Table
 				unset($tableInfo);
 
 				//Collecting information about columns(titles and column keys)
-				if(self::$info['cols'])
+				if(isset(self::$info['cols']) && self::$info['cols'])
 				{
 					self::$info['cols'] = array_filter(
 						self::$info['cols'],
 						function($v) {
-							$useCol = ($v['show'] == "excel" ? false : true)
+							$useCol = (isset($v['show']) && $v['show'] == "excel" ? false : true)
 								&& (is_string($v) || is_bool($v) ? $v : $v['title']);
 							return $useCol;
 						}
@@ -128,7 +128,7 @@ class Table
 				}
 			}
 
-			self::$info['class'] = trim("class.table " . self::$info['class']);
+			self::$info['class'] = trim("class.table " . (isset(self::$info['class']) ? self::$info['class'] : ''));
 			//Collecting HTML parameters for table
 			$args = self::convertRulesToHtml(self::$info);
 
@@ -218,9 +218,6 @@ class Table
 				$args = self::convertRulesToHtml($rowRules);
 			}
 
-			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
-			$subRow = $subRow[0];
-
 			//If do not specify column keys then it is filled with all the elements of the array, except for sub-arrays(all cells)
 			if(!$colKeys) $colKeys = array_keys(array_filter($data, function($v){return !is_array($v);}));
 
@@ -264,12 +261,16 @@ class Table
 					}
 				}
 
-				self::writeCell($data[$key], $cellsRules[$key]);
+				self::writeCell((isset($data[$key]) ? $data[$key] : null), (isset($cellsRules[$key]) ? $cellsRules[$key] : null));
 			}
 			self::$html .= "\n		</tr>";
 
-			foreach($subRow as $row)
-				self::writeRow($row, $colKeys);
+			$subRow = array_values(array_filter($data, function($v) {return is_array($v);}));
+			if (isset($subRow[0]) && is_array($subRow[0]))
+			{
+				foreach($subRow[0] as $row)
+					self::writeRow($row, $colKeys);
+			}
 		}
 	}
 
