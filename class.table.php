@@ -104,7 +104,7 @@ class Table {
                         }
                     }
 
-//					self::pre(self::$view);
+//                  self::pre(self::$view);
                     unset(self::$info['cols']);
                 }
             }
@@ -118,25 +118,24 @@ class Table {
                 self::$info['rowspan'] = true;
             }
 
-            self::$html .= "\n		<table{$html_args}>";
-            self::$html .= "\n			<caption>
-										</caption>";
+            self::$html .= "\n<table{$html_args}><caption></caption>";
 
             //If title was set then write
             if (is_array($titles) && sizeof($titles)) {
-                self::$html .= "\n		<tr>";
+                self::$html .= "<thead><tr>\n";
                 foreach ($titles as $title) {
-                    self::$html .= "\n			<th>{$title}</th>";
+                    self::$html .= "<th>{$title}</th>\n";
                 }
-                self::$html .= "\n		</tr>";
+                self::$html .= "</tr></thead>";
             }
 
+            self::$html .= "<tbody>";
             //Write the rows
             foreach ($data as $info) {
                 self::writeRow($info, $colKeys);
             }
 
-            self::$html .= "\n		</table>";
+            self::$html .= "</tbody></table>\n";
 
             $html = self::$html;
             //Clearing of global variables for the next use a static class
@@ -191,7 +190,7 @@ class Table {
                     }));
             }
 
-            self::$html .= "\n		<tr{$args}>";
+            self::$html .= "\n      <tr{$args}>";
             foreach ($colKeys as $i => $key) {
                 if (
                     isset($data[$key]) && //$subRow &&
@@ -228,7 +227,7 @@ class Table {
 
                 self::writeCell((isset($data[$key]) ? $data[$key] : null), (isset($cellsRules[$key]) ? $cellsRules[$key] : null));
             }
-            self::$html .= "\n		</tr>";
+            self::$html .= "\n      </tr>";
 
             $subRow = array_values(array_filter($data, function($v) {
                     return is_array($v);
@@ -250,7 +249,7 @@ class Table {
      */
     private static function writeCell($data, $rules) {
         $args = self::convertRulesToHtml($rules);
-        self::$html .= "\n			<td{$args}>{$data}</td>";
+        self::$html .= "\n          <td{$args}>{$data}</td>";
     }
 
     /**
@@ -591,9 +590,9 @@ class Table {
             //***************************************
             self::$sheet->setSelectedCellByColumnAndRow(0, 1);
 
-//			self::$sheet->setCellValueByColumnAndRow(8, 2, "VALUE");
-//			self::$sheet->mergeCellsByColumnAndRow(8, 2, 8, 3);
-//			pre(self::$sheet->getMergeCells());
+//          self::$sheet->setCellValueByColumnAndRow(8, 2, "VALUE");
+//          self::$sheet->mergeCellsByColumnAndRow(8, 2, 8, 3);
+//          pre(self::$sheet->getMergeCells());
 
             if ($data['tableInfo']) {
                 //Following work will be happening with global variable $info
@@ -735,7 +734,7 @@ class Table {
     }
 
     private static function excelCellSetValue($col, $value, $rules) {
-//		$col = 0;
+//      $col = 0;
 
         if ($value === null) {
             $value = " ";
